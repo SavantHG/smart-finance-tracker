@@ -7,13 +7,18 @@ from .models import Expense
 from django.utils.timezone import now
 from django.db.models import Sum
 from datetime import date
+from .parser import parse_expense_input
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_expense(request):
-    data = request.data
+    message = request.data.get("message")
+    parsed_data = parse_expense_input(message)
 
-    serializer = ExpenseSerializer(data={**data, "user": request.user.id})
+    if parsed_data is None:
+        return Response({"error": "Invalid input. Use format like '500 grocery dal, masale'"}, status=400)
+
+    serializer = ExpenseSerializer(data={**parsed_data, "user": request.user.id})
 
     if serializer.is_valid():
         expense = serializer.save()
